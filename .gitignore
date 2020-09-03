@@ -11,4 +11,4 @@ buildNumber.properties
 .idea/
 *.iml
 /bin/
-./bert_pretrain/bert-base-uncased-pytorch_model.bin
+/bert_pretrain/bert-base-uncased-pytorch_model.bin

@@ -82,7 +82,7 @@ def train(config, model, train_iter, dev_iter, test_iter):
                 break
         if flag:
             break
-    test(config, model, test_iter)
+    #test(config, model, test_iter)
 
 
 def test(config, model, test_iter):

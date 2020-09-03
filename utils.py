@@ -40,19 +40,20 @@ def build_dataset(config):
         dataset = pkl.load( open(config.datasetpkl, "rb" ))
         train = dataset['train']
         dev = dataset['dev']
-        test = dataset['test']
+        #test = dataset['test']
+
     else:
         train = load_dataset(config, config.train_path, config.pad_size)
         dev = load_dataset(config, config.dev_path, config.pad_size)
-        test = load_dataset(config, config.test_path, config.pad_size)
+        #test = load_dataset(config, config.test_path, config.pad_size)
 
         dataset = {}
         dataset['train'] = train
         dataset['dev'] = dev
-        dataset['test'] = test
+        #dataset['test'] = test
 
         pkl.dump(dataset, open(config.datasetpkl, "wb" ))
-    return train, dev, test
+    return train, dev, #test
 
 
 class DatasetIterater(object):
