@@ -1,0 +1,6 @@
+jieba==0.39
+tqdm==4.32.1
+torch==1.1.0
+torchvision==0.3.0
+numpy== 1.16.4
+transformers
