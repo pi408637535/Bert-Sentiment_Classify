@@ -18,7 +18,7 @@ parser.add_argument('--model', type=str, required=True, help='choose a model: Be
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    dataset = 'THUCNews'  # 数据集
+    dataset = 'text_emotion'  # 数据集
 
     model_name = args.model  # bert
     x = import_module('models.' + model_name)

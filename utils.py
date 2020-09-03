@@ -16,6 +16,11 @@ def load_dataset(config, path, pad_size=32):
             lin = line.strip()
             if not lin:
                 continue
+
+             #Todo
+            if len(lin.split('\t')) != 2:
+                continue
+
             content, label = lin.split('\t')
             token = config.tokenizer.tokenize(content)
             token = [CLS] + token

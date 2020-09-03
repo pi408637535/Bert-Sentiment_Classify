@@ -8,7 +8,9 @@ import time
 from utils import get_time_dif
 #from pytorch_pretrained_bert.optimization import BertAdam
 from transformers.optimization import AdamW
-from pytorch_pretrained.optimization import BertAdam
+#from pytorch_pretrained.optimization import BertAdam
+from transformers.optimization import AdamW
+from transformers.optimization import get_linear_schedule_with_warmup
 
 # 权重初始化，默认xavier
 def init_network(model, method='xavier', exclude='embedding', seed=123):
@@ -42,7 +44,13 @@ def train(config, model, train_iter, dev_iter, test_iter):
     ]
 
     #optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
-    optimizer = BertAdam(optimizer_grouped_parameters, lr=config.learning_rate,  warmup=0.05,t_total=len(train_iter) * config.num_epochs)
+    #optimizer = BertAdam(optimizer_grouped_parameters, lr=config.learning_rate,  warmup=0.05,t_total=len(train_iter) * config.num_epochs)
+
+    optimizer = AdamW(model.parameters(), lr=config.learning_rate,
+                      correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05,
+                                                num_training_steps=len(train_iter) * config.num_epochs)  # PyTorch scheduler
+
     #optimizer = AdamW(optimizer_grouped_parameters, lr=config.learning_rate, correct_bias=False)
     total_batch = 0  # 记录进行到多少batch
     dev_best_loss = float('inf')
