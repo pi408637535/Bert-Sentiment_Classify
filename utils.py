@@ -39,6 +39,9 @@ def load_dataset(config, path, pad_size=32):
             contents.append((token_ids, int(label), seq_len, mask))
     return contents
 
+
+
+
 def build_dataset(config):
 
     if os.path.isfile(config.datasetpkl):

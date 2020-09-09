@@ -15,7 +15,9 @@ def show_columns(df):
     print(train_df.columns)
 
 if __name__ == '__main__':
+    #source_path = "/Users/piguanghua/Downloads/text_emotion/train.csv"
     source_path = "/Users/piguanghua/Downloads/text_emotion/train.csv"
+
     train_df=pd.read_csv(source_path)
 
     #show_columns(df) 'ID', 'txt', 'Label'
@@ -36,8 +38,8 @@ if __name__ == '__main__':
     x = np.linspace(0, y[-1], num=len(y))
 
     plt.figure()
-    #plt.plot(list(x), y)
-    #plt.show()
+    plt.plot(list(x), y)
+    plt.show()
 
     data = [
             (train_df['Label'][train_df['Label'] == 0]).shape[0],
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     plt.hist([0,1], bins=data, facecolor="blue", edgecolor="black")
 
     sns.barplot(x=[0,1], y =data )
-    
+
     plt.show()
 
 

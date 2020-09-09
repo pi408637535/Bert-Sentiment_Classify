@@ -18,13 +18,13 @@ class Config(object):
 
         self.class_list = [0,1]
 
-        self.save_path = dataset + '/saved_dict/' + self.model_name + '.ckpt'        # 模型训练结果
+        self.save_path = "data/" + dataset + '/saved_dict/' + self.model_name + '.ckpt'        # 模型训练结果
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')   # 设备
 
         self.require_improvement = 1000                                 # 若超过1000batch效果还没提升，则提前结束训练
         self.num_classes = len(self.class_list)                         # 类别数
         self.num_epochs = 3                                             # epoch数
-        self.batch_size = 2                                           # mini-batch大小
+        self.batch_size = 6                                           # mini-batch大小
         self.pad_size = 512                                              # 每句话处理成的长度(短填长切)
         self.learning_rate = 5e-5                                       # 学习率
         self.bert_path = './bert_pretrain'
@@ -40,12 +40,25 @@ class Model(nn.Module):
         self.bert = BertModel.from_pretrained(config.bert_path)
         for param in self.bert.parameters():
             param.requires_grad = True
-        self.fc = nn.Linear(config.hidden_size, config.num_classes)
+        self.gru = nn.GRU(config.hidden_size, config.hidden_size, num_layers = 1, batch_first=True, bidirectional= True )
+        self.fc = nn.Linear(config.hidden_size * 2, config.num_classes)
 
     def forward(self, x):
-        context = x[0]  # 输入的句子
-        mask = x[2]  # 对padding部分进行mask，和句子一个size，padding部分用0表示，如：[1, 1, 1, 1, 0, 0]
-        # todo attention_mask怎么用
-        _, pooled = self.bert(context, attention_mask=mask, output_hidden_states=False)
-        out = self.fc(pooled)
+        input_ids = x[0] #batch,split,seq
+        input_mask = x[1]
+        segment_ids = x[2]
+
+        flat_input_ids = input_ids.view(-1, input_ids.size(-1))
+        flat_input_mask = input_mask.view(-1, input_ids.size(-1))
+        flat_segment_ids = segment_ids.view(-1, input_ids.size(-1))
+
+        _, pooled = self.bert(flat_input_ids, attention_mask=flat_input_mask, token_type_ids= flat_segment_ids,output_hidden_states=False)
+
+        batch,split_num = input_ids.shape[0],input_ids.shape[1]
+
+        output = pooled.reshape(batch,split_num,-1)
+
+        output, h_n = self.gru(output)
+
+        out = self.fc(output[:,-1])
         return out

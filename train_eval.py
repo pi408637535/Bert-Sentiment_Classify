@@ -59,15 +59,17 @@ def train(config, model, train_iter, dev_iter, test_iter):
     model.train()
     for epoch in range(config.num_epochs):
         print('Epoch [{}/{}]'.format(epoch + 1, config.num_epochs))
-        for i, (trains, labels) in enumerate(train_iter):
-            outputs = model(trains)
+        for i, data in enumerate(train_iter):
+            data = tuple(t.to(config.device) for t in data)
+            input_ids, input_mask, segment_ids, label_ids = data#
+            outputs = model(data)
             model.zero_grad()
-            loss = F.cross_entropy(outputs, labels)
+            loss = F.cross_entropy(outputs, label_ids)
             loss.backward()
             optimizer.step()
             if total_batch % 100 == 0:
                 # 每多少轮输出在训练集和验证集上的效果
-                true = labels.data.cpu()
+                true = label_ids.data.cpu()
                 predic = torch.max(outputs.data, 1)[1].cpu()
                 train_acc = metrics.accuracy_score(true, predic)
                 dev_acc, dev_loss = evaluate(config, model, dev_iter)
@@ -115,11 +117,14 @@ def evaluate(config, model, data_iter, test=False):
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
     with torch.no_grad():
-        for texts, labels in data_iter:
-            outputs = model(texts)
-            loss = F.cross_entropy(outputs, labels)
+        #for texts, labels in data_iter:
+        for i, data in enumerate(data_iter):
+            data = tuple(t.to(config.device) for t in data)
+            input_ids, input_mask, segment_ids, label_ids = data  #
+            outputs = model(data)
+            loss = F.cross_entropy(outputs, label_ids)
             loss_total += loss
-            labels = labels.data.cpu().numpy()
+            labels = label_ids.data.cpu().numpy()
             predic = torch.max(outputs.data, 1)[1].cpu().numpy()
             labels_all = np.append(labels_all, labels)
             predict_all = np.append(predict_all, predic)

@@ -11,11 +11,26 @@ import numpy as np
 from train_eval import train, init_network
 from importlib import import_module
 import argparse
-from utils import build_dataset, build_iterator, get_time_dif
+from utils import get_time_dif
+from data_utils import build_dataset
+import pandas as pd
+from data_utils import convert_examples_to_features
+
 
 parser = argparse.ArgumentParser(description='Chinese Text Classification')
 parser.add_argument('--model', type=str, required=True, help='choose a model: Bert, ERNIE')
+parser.add_argument('--max_seq_length', type=int, default=512, help='maximum total input sequence length')
+parser.add_argument('--split_num', type=int, default=4, help='split_num')
+parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
+
+
+
+
 args = parser.parse_args()
+
+
+
+
 
 if __name__ == '__main__':
     dataset = 'text_emotion'  # 数据集
@@ -30,9 +45,12 @@ if __name__ == '__main__':
 
     start_time = time.time()
     print("Loading data...")
-    train_data, dev_data = build_dataset(config)
-    train_iter = build_iterator(train_data, config)
-    dev_iter = build_iterator(dev_data, config)
+
+
+
+    train_iter, dev_iter = build_dataset(config, args)
+    #train_iter = build_iterator(train_data, config)
+    #dev_iter = build_iterator(dev_data, config)
     #test_iter = build_iterator(test_data, config)
     time_dif = get_time_dif(start_time)
     print("Time usage:", time_dif)
