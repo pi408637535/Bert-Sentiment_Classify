@@ -35,19 +35,26 @@ def train(config, model, train_iter, dev_iter, test_iter):
     start_time = time.time()
     model.train()
     param_optimizer = list(model.named_parameters())
-    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+    #no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
     #LayerNorm,bias是不需要decay的
     optimizer_grouped_parameters = [
-        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        #{'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+        #{'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0},
+        {'params': [p for n, p in param_optimizer if "bert" in n], "lr":config.bert_learning_rate, 'weight_decay': 0.01 },
+        {'params': [p for n, p in param_optimizer if "bert" not in n], "lr": config.other_learning_rate,'weight_decay': 0.01 },
+
     ]
 
     #optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     #optimizer = BertAdam(optimizer_grouped_parameters, lr=config.learning_rate,  warmup=0.05,t_total=len(train_iter) * config.num_epochs)
 
-    optimizer = AdamW(model.parameters(), lr=config.learning_rate,
+
+    optimizer = AdamW(optimizer_grouped_parameters, lr=config.learning_rate,
                       correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False
+
+
+
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05,
                                                 num_training_steps=len(train_iter) * config.num_epochs)  # PyTorch scheduler
 

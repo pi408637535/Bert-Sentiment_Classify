@@ -1,6 +1,8 @@
 # coding: UTF-8
 import torch
+import torch as t
 import torch.nn as nn
+import torch.nn.functional as F
 # from pytorch_pretrained_bert import BertModel, BertTokenizer
 from transformers import BertModel, BertTokenizer
 
@@ -43,8 +45,22 @@ class Model(nn.Module):
         self.bert = BertModel.from_pretrained(config.bert_path)
         for param in self.bert.parameters():
             param.requires_grad = True
-        self.gru = nn.GRU(config.hidden_size, config.hidden_size, num_layers = 1, batch_first=True,dropout=0.2, bidirectional= True )
-        self.fc = nn.Linear(config.hidden_size * 2, config.num_classes)
+
+        ngram = [2, 3, 4]
+        in_channels = 1
+        out_channels = 100
+        class_num = 2
+        self.filters = nn.ModuleList([nn.Conv2d(in_channels, out_channels, kernel_size=(ele, config.hidden_size)) for ele in ngram])
+        self.fc = nn.Linear(out_channels * len(ngram), class_num)
+
+    @staticmethod
+    def conv_filter(conv, text):
+        # text: batch,in_channel,h,w: b,in,seq,dim
+        data = conv(text)  # data: batch,out_channel,H,1
+        data = t.squeeze(data, dim=-1)  # data: batch,out_channel,H
+        data = F.max_pool1d(data, kernel_size=(data.shape[-1]))  # data: batch, channel, 1\
+        data = t.squeeze(data, dim=-1)
+        return data
 
     def forward(self, x):
         input_ids = x[0] #batch,split,seq
@@ -61,7 +77,10 @@ class Model(nn.Module):
 
         output = pooled.reshape(batch,split_num,-1)
 
-        output, h_n = self.gru(output)
 
-        out = self.fc(output[:,-1])
-        return out
+        text = t.unsqueeze(output, dim=1)
+        data = [self.conv_filter(cnn_filter, text) for cnn_filter in self.filters]
+        data = t.cat(data, dim=1)
+        return self.fc(data)
+
+
