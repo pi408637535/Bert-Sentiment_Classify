@@ -19,8 +19,8 @@ from data_utils import convert_examples_to_features
 parser = argparse.ArgumentParser(description='Chinese Text Classification')
 parser.add_argument('--model', type=str, required=True, help='choose a model: Bert, ERNIE')
 parser.add_argument('--max_seq_length', type=int, default=365, help='maximum total input sequence length')
-parser.add_argument('--split_num', type=int, default=4, help='split_num')
-parser.add_argument('--batch_size', type=int, default=8, help='batch_size')
+parser.add_argument('--split_num', type=int, default=3, help='split_num')
+parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
 
 
 
