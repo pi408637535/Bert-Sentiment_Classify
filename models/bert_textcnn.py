@@ -18,7 +18,7 @@ class Config(object):
         #self.test_path = dataset + '/data/test.txt'                                  # 测试集
         #self.class_list = [x.strip() for x in open( dataset + '/data/class.txt').readlines()]                                # 类别名单
 
-        self.class_list = [0,1]
+        self.class_list = [0,1,2]
 
         self.save_path = "data/" + dataset + '/saved_dict/' + self.model_name + '.ckpt'        # 模型训练结果
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')   # 设备
@@ -34,8 +34,10 @@ class Config(object):
 
         self.bert_path = './bert_pretrain'
         self.datasetpkl = "pkl/data.pkl"
-        self.tokenizer = BertTokenizer.from_pretrained(self.bert_path)
-        self.hidden_size = 768
+        self.tokenizer = BertTokenizer.from_pretrained(self.bert_path + "/bert-base-chinese-vocab.txt")
+        self.lstm_hidden = 512
+        self.bert_hidden = 768
+        self.weight_decay = 0
 
 
 class Model(nn.Module):
@@ -46,11 +48,11 @@ class Model(nn.Module):
         for param in self.bert.parameters():
             param.requires_grad = True
 
-        ngram = [2, 3, 4]
+        ngram = [1, 2, 3]
         in_channels = 1
         out_channels = 100
-        class_num = 2
-        self.filters = nn.ModuleList([nn.Conv2d(in_channels, out_channels, kernel_size=(ele, config.hidden_size)) for ele in ngram])
+        class_num = config.num_classes
+        self.filters = nn.ModuleList([nn.Conv2d(in_channels, out_channels, kernel_size=(ele, config.bert_hidden)) for ele in ngram])
         self.fc = nn.Linear(out_channels * len(ngram), class_num)
 
     @staticmethod
@@ -63,7 +65,7 @@ class Model(nn.Module):
         return data
 
     def forward(self, x):
-        input_ids = x[0] #batch,split,seq
+        input_ids = x[0]  # batch,split,seq
         input_mask = x[1]
         segment_ids = x[2]
 
@@ -71,12 +73,13 @@ class Model(nn.Module):
         flat_input_mask = input_mask.view(-1, input_ids.size(-1))
         flat_segment_ids = segment_ids.view(-1, input_ids.size(-1))
 
-        _, pooled = self.bert(flat_input_ids, attention_mask=flat_input_mask, token_type_ids= flat_segment_ids,output_hidden_states=False)
+        # _, pooled = self.bert(flat_input_ids, attention_mask=flat_input_mask, token_type_ids= flat_segment_ids,output_hidden_states=False)
+        _, pooled = self.bert(input_ids=flat_input_ids, token_type_ids=flat_segment_ids,
+                              attention_mask=flat_input_mask)
 
-        batch,split_num = input_ids.shape[0],input_ids.shape[1]
+        batch, split_num = input_ids.shape[0], input_ids.shape[1]
 
-        output = pooled.reshape(batch,split_num,-1)
-
+        output = pooled.reshape(batch, split_num, -1)
 
         text = t.unsqueeze(output, dim=1)
         data = [self.conv_filter(cnn_filter, text) for cnn_filter in self.filters]
