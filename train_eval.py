@@ -38,21 +38,26 @@ def train(config, model, train_iter, dev_iter, test_iter):
     #no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
     #LayerNorm,bias是不需要decay的
-    optimizer_grouped_parameters = [
-        #{'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-        #{'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0},
-        {'params': [p for n, p in param_optimizer if "bert" in n], "lr":config.bert_learning_rate, 'weight_decay': 0.01 },
-        {'params': [p for n, p in param_optimizer if "bert" not in n], "lr": config.other_learning_rate,'weight_decay': 0.01 },
+    # optimizer_grouped_parameters = [
+    #     {'params': [p for n, p in param_optimizer if "bert" in n], "lr":config.bert_learning_rate, 'weight_decay': 0.01 },
+    #     {'params': [p for n, p in param_optimizer if "bert" not in n], "lr": config.other_learning_rate,'weight_decay': 0.01 },
+    #
+    # ]
 
+    # LayerNorm,bias是不需要decay的
+    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+    optimizer_grouped_parameters = [
+        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+         'weight_decay': config.weight_decay},
+        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
 
     #optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     #optimizer = BertAdam(optimizer_grouped_parameters, lr=config.learning_rate,  warmup=0.05,t_total=len(train_iter) * config.num_epochs)
 
 
-    optimizer = AdamW(optimizer_grouped_parameters, lr=config.learning_rate,
+    optimizer = AdamW(optimizer_grouped_parameters, lr=config.bert_learning_rate,
                       correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False
-
 
 
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05,
@@ -73,7 +78,11 @@ def train(config, model, train_iter, dev_iter, test_iter):
             model.zero_grad()
             loss = F.cross_entropy(outputs, label_ids)
             loss.backward()
+
             optimizer.step()
+            scheduler.step()
+
+
             if total_batch % 100 == 0:
                 # 每多少轮输出在训练集和验证集上的效果
                 true = label_ids.data.cpu()

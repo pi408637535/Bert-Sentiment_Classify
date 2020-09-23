@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 # from pytorch_pretrained_bert import BertModel, BertTokenizer
 from transformers import BertModel, BertTokenizer
-
+from transformers import BertForSequenceClassification,BertConfig
 
 class Config(object):
 
@@ -25,33 +25,32 @@ class Config(object):
         self.num_epochs = 3                                             # epoch数
         self.batch_size = 6                                           # mini-batch大小
         self.pad_size = 512                                              # 每句话处理成的长度(短填长切)
-        self.learning_rate = 5e-5                                       # 学习率
+        #self.learning_rate = 5e-5                                       # 学习率
         self.bert_learning_rate = 5e-5
         self.other_learning_rate = 1e-3
 
         self.bert_path = './bert_pretrain'
         self.datasetpkl = "pkl/data.pkl"
         self.tokenizer = BertTokenizer.from_pretrained(self.bert_path + "/bert-base-chinese-vocab.txt")
-        self.lstm_hidden = 512
-        self.bert_hidden = 768
+        self.hidden_size = 768
         self.weight_decay = 0
-
 
 class Model(nn.Module):
 
     def __init__(self, config):
         super(Model, self).__init__()
+        # self.bert = BertModel.from_pretrained(config.bert_path)
+        # config = BertConfig.from_pretrained(config.bert_path + "/bert_config.json", num_labels=3)
+        # self.bert = BertForSequenceClassification.from_pretrained(config.bert_path,
+        #                                                           config=config)
+
         self.bert = BertModel.from_pretrained(config.bert_path)
         for param in self.bert.parameters():
             param.requires_grad = True
-        self.gru = []
-        self.gru.append(
-            nn.GRU(config.bert_hidden, config.lstm_hidden, num_layers = 1, batch_first=True, dropout=0.1, bidirectional= True )
-        )
+        self.fc = nn.Linear(config.hidden_size, config.num_classes)
 
-        self.gru = nn.ModuleList(self.gru)
-        self.dropout = nn.Dropout(0.2)
-        self.fc = nn.Linear(config.lstm_hidden * 2, config.num_classes)
+        for param in self.bert.parameters():
+            param.requires_grad = True
 
     def forward(self, x):
         input_ids = x[0] #batch,split,seq
@@ -62,25 +61,14 @@ class Model(nn.Module):
         flat_input_mask = input_mask.view(-1, input_ids.size(-1))
         flat_segment_ids = segment_ids.view(-1, input_ids.size(-1))
 
-        #_, pooled = self.bert(flat_input_ids, attention_mask=flat_input_mask, token_type_ids= flat_segment_ids,output_hidden_states=False)
-        _, pooled = self.bert(input_ids=flat_input_ids, position_ids=None, token_type_ids=flat_segment_ids,
-                  attention_mask=flat_input_mask, head_mask=None)
+        #loss = self.bert(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask, labels=label_ids)
 
-        batch,split_num = input_ids.shape[0],input_ids.shape[1]
+        sequence_output, pooled = self.bert(flat_input_ids, token_type_ids=flat_segment_ids,attention_mask=flat_input_mask)
 
-        output = pooled.reshape(batch,split_num,-1)
+        batch, split_num = input_ids.shape[0], input_ids.shape[1]
 
+        output = sequence_output.reshape(batch, split_num, -1)
 
-        for gru in self.gru:
-            try:
-                gru.flatten_parameters()  #GRU(768, 512, batch_first=True, bidirectional=True)
-            except:
-                pass
-            output, hidden = gru(output)
-            output = self.dropout(output)
+        out = torch.sum(self.fc(output),dim=2)
 
-        #output, hidden = self.gru(output)
-        hidden = hidden.permute(1, 0, 2).reshape(input_ids.size(0), -1).contiguous()
-
-        out = self.fc(hidden)
         return out
