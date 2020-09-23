@@ -131,28 +131,15 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length, split_num,
             context_tokens_choice = context_tokens[
                                     int(i * skip_len): int((i + 1) * skip_len)]  # split_num：将文本分割成split_num段
             _truncate_seq_pair(context_tokens_choice, ending_tokens, max_seq_length - 3)
-            #_truncate_seq_single(context_tokens_choice, max_seq_length - 2)
-
-            #tokens = ["[CLS]"] + context_tokens_choice + ["[SEP]"]
-            #Todo [CLS]位于最后
-            tokens = ending_tokens + ["<sep>"] + context_tokens_choice + ["<sep>"] + ["<cls>"]
-
-            # segment_ids = [0] * (len(context_tokens_choice) + 2)
-            # input_ids = tokenizer.convert_tokens_to_ids(tokens)
-            # input_mask = [1] * len(input_ids)
-            segment_ids = [0] * (len(ending_tokens) + 1) + [1] * (len(context_tokens_choice) + 1) + [2]
+            tokens = ["[CLS]"] + ending_tokens + ["[SEP]"] + context_tokens_choice + ["[SEP]"]
+            segment_ids = [0] * (len(ending_tokens) + 2) + [1] * (len(context_tokens_choice) + 1)
             input_ids = tokenizer.convert_tokens_to_ids(tokens)
             input_mask = [1] * len(input_ids)
 
             padding_length = max_seq_length - len(input_ids)
-            '''
             input_ids += ([0] * padding_length)
             input_mask += ([0] * padding_length)
             segment_ids += ([0] * padding_length)
-            '''
-            input_ids = ([0] * padding_length) + input_ids
-            input_mask = ([0] * padding_length) + input_mask
-            segment_ids = ([4] * padding_length) + segment_ids
             choices_features.append((tokens, input_ids, input_mask, segment_ids))
 
             label = example.label

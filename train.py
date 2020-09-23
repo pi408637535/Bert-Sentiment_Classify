@@ -15,12 +15,15 @@ from utils import get_time_dif
 from data_utils import build_dataset
 import pandas as pd
 from data_utils import convert_examples_to_features
+import os
 
 parser = argparse.ArgumentParser(description='Chinese Text Classification')
 parser.add_argument('--model', type=str, required=True, help='choose a model: Bert, ERNIE')
 parser.add_argument('--max_seq_length', type=int, default=365, help='maximum total input sequence length')
 parser.add_argument('--split_num', type=int, default=3, help='split_num')
-parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
+parser.add_argument('--batch_size', type=int, default=2, help='batch_size')
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 
@@ -41,6 +44,8 @@ if __name__ == '__main__':
     torch.manual_seed(1)
     torch.cuda.manual_seed_all(1)
     torch.backends.cudnn.deterministic = True  # 保证每次结果一样
+    if torch.cuda.device_count() > 0:
+        torch.cuda.manual_seed_all(1)
 
     start_time = time.time()
     print("Loading data...")
@@ -54,6 +59,7 @@ if __name__ == '__main__':
     time_dif = get_time_dif(start_time)
     print("Time usage:", time_dif)
 
-    # train
+
+    #CUDA_LAUNCH_BLOCKING = 1
     model = x.Model(config).to(config.device)
     train(config, model, train_iter, dev_iter, None)

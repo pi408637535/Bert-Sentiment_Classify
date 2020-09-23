@@ -16,11 +16,10 @@ class Config(object):
         #self.test_path = dataset + '/data/test.txt'                                  # 测试集
         #self.class_list = [x.strip() for x in open( dataset + '/data/class.txt').readlines()]                                # 类别名单
 
-        self.class_list = [0,1]
+        self.class_list = [0,1,2]
 
         self.save_path = "data/" + dataset + '/saved_dict/' + self.model_name + '.ckpt'        # 模型训练结果
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')   # 设备
-
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   # 设备
         self.require_improvement = 1000                                 # 若超过1000batch效果还没提升，则提前结束训练
         self.num_classes = len(self.class_list)                         # 类别数
         self.num_epochs = 3                                             # epoch数
@@ -32,7 +31,7 @@ class Config(object):
 
         self.bert_path = './bert_pretrain'
         self.datasetpkl = "pkl/data.pkl"
-        self.tokenizer = BertTokenizer.from_pretrained(self.bert_path)
+        self.tokenizer = BertTokenizer.from_pretrained(self.bert_path + "/bert-base-chinese-vocab.txt")
         self.hidden_size = 768
 
 
